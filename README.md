@@ -334,7 +334,7 @@ After every tool observation a checkpoint is written to `state/<run_id>.json` (r
 
 Four executions, none repeated; final status REFUND with INR 128.25. The ledger holds 3 lines (S1 and S2 issued, S3 escalated); the resumed `issue_refund` found the S1 line already there and did not duplicate it. `state/` holds 9 checkpoints (7 scenario runs and 2 demo runs that executed tools).
 
-### ReAct versus plan-and-execute (about 230 words)
+### ReAct versus plan-and-execute (about 210 words)
 
 Measured ReAct cost: 5 model calls for S1 (1,027 tokens), 3 for S5 (415), 2 for S6 (124). Every call re-sends the growing history, including the roughly 250-token policy search result, so tokens grow faster than calls. A plan-and-execute design asks for the whole step list once, so the happy path (S1) needs about 1 to 2 model calls and perhaps 250 to 300 tokens; that is an estimate, I did not build it. Unexpected observations are where it is weaker. If `get_order` returns NOT_FOUND or a cancelled order, the remaining planned steps (calculate, issue) are invalid, so the executor must detect the error and ask for a new plan, costing an extra call, and any step run before the check is wasted. ReAct reacts after every observation: S6 stops after 2 calls and S5 after 3, without planning steps that will never run. For this refund workflow I would choose ReAct, because money moves and the next action depends on the order's status, amount and delivery time, so each tool result should be inspected before the next step, and the hard limits (6 calls, token limit, timeout) keep its cost bounded. Plan-and-execute would be a reasonable optimisation for high-volume, uniform cases, with a replan on any error.
 
